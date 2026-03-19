@@ -41,11 +41,6 @@ Funziona interamente nel browser — nessuna installazione, nessun server, nessu
 | Pentax | PEF |
 | Sigma | X3F |
 
-### Autore
-Sviluppato da **Filippo**
-
----
-
 ## English
 
 ### Description
@@ -82,10 +77,5 @@ It runs entirely in the browser — no installation, no server, no data sent onl
 | Olympus | ORF |
 | Pentax | PEF |
 | Sigma | X3F |
-
-### Author
-Developed by **Filippo**
-
----
 
 *No data is ever uploaded or stored. Everything runs locally in your browser.*
