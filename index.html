@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoPhoto → KMZ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --border2: #21262d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #3fb950;
+    --accent2: #58a6ff;
+    --danger: #f85149;
+    --warn: #d29922;
+    --radius: 8px;
+  }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, #238636, #3fb950);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(63,185,80,0.05);
+  }
+
+  .dropzone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .drop-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+
+  .drop-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .drop-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 1.5rem 0;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-value.green { color: var(--accent); }
+  .stat-value.blue { color: var(--accent2); }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .btn:hover { border-color: var(--border2); background: var(--surface2); }
+
+  .btn.primary {
+    background: #238636;
+    border-color: #2ea043;
+    color: #fff;
+  }
+
+  .btn.primary:hover { background: #2ea043; }
+
+  .btn.secondary {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: #fff;
+  }
+
+  .btn.secondary:hover { background: #388bfd; }
+
+  .btn.danger-btn {
+    background: transparent;
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .btn.danger-btn:hover { background: rgba(248,81,73,0.1); }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    padding: 7px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-box:focus { border-color: var(--accent2); }
+
+  .table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    max-height: 480px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  thead th {
+    background: var(--surface2);
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.07em;
+    font-weight: 500;
+    padding: 10px 14px;
+    text-align: left;
+    position: sticky; top: 0; z-index: 2;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  thead th:hover { color: var(--text); }
+  thead th.sorted { color: var(--accent); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border2);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr.selected { background: rgba(63,185,80,0.08); }
+
+  td {
+    padding: 9px 14px;
+    vertical-align: middle;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  td.filename {
+    font-family: 'Sora', sans-serif;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+  }
+
+  td.no-gps {
+    color: var(--danger);
+    font-family: 'Sora', sans-serif;
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-family: 'Sora', sans-serif;
+    font-weight: 500;
+  }
+
+  .badge.ok { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+  .badge.err { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+  .badge.partial { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid rgba(210,153,34,0.3); }
+
+  .thumb {
+    width: 36px; height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state p { font-size: 0.85rem; }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    margin: 1rem 0;
+    overflow: hidden;
+    display: none;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #238636, #3fb950);
+    border-radius: 2px;
+    transition: width 0.2s;
+    width: 0%;
+  }
+
+  .kmz-options {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .kmz-options h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .opt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .opt-field label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 5px;
+  }
+
+  .opt-field input, .opt-field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .opt-field input:focus, .opt-field select:focus { border-color: var(--accent2); }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.82rem; color: var(--muted);
+  }
+
+  .checkbox-row input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+  .section-title {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1.5rem 0 0.7rem;
+    font-weight: 500;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 0.82rem;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 999;
+    animation: slideIn 0.2s ease;
+    max-width: 320px;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .csv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  @media (max-width: 600px) {
+    body { padding: 1rem; }
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌍</div>
+  <div>
+    <h1>GeoPhoto → KMZ</h1>
+    <p>Estrai coordinate GPS da JPEG, TIFF, HEIC, RAW, GeoTIFF ed esporta per Google Earth</p>
+  </div>
+</header>
+
+<!-- Drop zone -->
+<div class="dropzone" id="dropzone">
+  <input type="file" id="fileInput" multiple accept="image/jpeg,image/jpg,image/tiff,image/webp,image/png,image/heic,image/heif,.jpg,.jpeg,.tif,.tiff,.heic,.heif,.dng,.cr2,.cr3,.nef,.nrw,.arw,.sr2,.rw2,.orf,.raf,.pef,.x3f,.webp,.png">
+  <div class="drop-icon">📁</div>
+  <div class="drop-text">Trascina qui i tuoi file immagine</div>
+  <div class="drop-sub">JPEG · TIFF · GeoTIFF · HEIC · DNG · RAW (CR2/3, NEF, ARW, ORF, RAF…) · WEBP · PNG</div>
+</div>
+
+<!-- Progress -->
+<div class="progress-bar" id="progressBar">
+  <div class="progress-fill" id="progressFill"></div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar" id="statsBar" style="display:none">
+  <div class="stat">
+    <div class="stat-label">File caricati</div>
+    <div class="stat-value blue" id="statTotal">0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Con GPS</div>
+    <div class="stat-value green" id="statGps">0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Senza GPS</div>
+    <div class="stat-value red" id="statNoGps">0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Con altitudine</div>
+    <div class="stat-value warn" id="statAlt">0</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar" id="toolbar" style="display:none">
+  <input type="text" class="search-box" id="searchBox" placeholder="🔍 Cerca per nome file...">
+  <button class="btn" onclick="sortByCol('filename')">↕ Nome</button>
+  <button class="btn" onclick="sortByCol('lat')">↕ Lat</button>
+  <button class="btn" onclick="sortByCol('alt')">↕ Alt</button>
+  <button class="btn" onclick="clearAll()">🗑 Svuota</button>
+</div>
+
+<div class="csv-actions" id="csvActions" style="display:none; margin-bottom: 12px;">
+  <button class="btn secondary" onclick="exportCSV()">⬇ Esporta CSV</button>
+  <button class="btn secondary" onclick="copyTable()">📋 Copia tabella</button>
+  <button class="btn primary" onclick="toggleKmzOptions()">🌍 Crea KMZ per Google Earth</button>
+</div>
+
+<!-- Table -->
+<div id="tableContainer" style="display:none">
+  <div class="table-wrapper">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th></th>
+          <th onclick="sortByCol('filename')">File</th>
+          <th onclick="sortByCol('format')">Formato</th>
+          <th onclick="sortByCol('lat')">Latitudine</th>
+          <th onclick="sortByCol('lon')">Longitudine</th>
+          <th onclick="sortByCol('alt')">Altitudine (m)</th>
+          <th onclick="sortByCol('date')">Data/Ora</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="empty-state" id="emptyState" style="display:none">
+  <div class="icon">📍</div>
+  <p>Nessuna immagine corrisponde alla ricerca.</p>
+</div>
+
+<!-- KMZ Options -->
+<div class="kmz-options" id="kmzOptions">
+  <h3>⚙️ Opzioni esportazione KMZ</h3>
+  <div class="opt-grid">
+    <div class="opt-field">
+      <label>Nome del layer</label>
+      <input type="text" id="kmzName" value="Le mie foto georeferenziate">
+    </div>
+    <div class="opt-field">
+      <label>Descrizione</label>
+      <input type="text" id="kmzDesc" value="Punti GPS estratti da immagini JPEG">
+    </div>
+    <div class="opt-field">
+      <label>Icona marker</label>
+      <select id="kmzIcon">
+        <option value="http://maps.google.com/mapfiles/kml/shapes/camera.png">📷 Fotocamera</option>
+        <option value="http://maps.google.com/mapfiles/kml/paddle/red-circle.png">🔴 Cerchio rosso</option>
+        <option value="http://maps.google.com/mapfiles/kml/paddle/ylw-stars.png">⭐ Stella gialla</option>
+        <option value="http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png">⚪ Punto</option>
+        <option value="http://maps.google.com/mapfiles/kml/shapes/flag.png">🚩 Bandiera</option>
+      </select>
+    </div>
+    <div class="opt-field">
+      <label>Solo foto con GPS</label>
+      <div class="checkbox-row">
+        <input type="checkbox" id="kmzOnlyGps" checked>
+        <span>Escludi file senza coordinate</span>
+      </div>
+    </div>
+    <div class="opt-field">
+      <label>Includi altitudine in 3D</label>
+      <div class="checkbox-row">
+        <input type="checkbox" id="kmzUseAlt" checked>
+        <span>Usa quota reale per rendering 3D</span>
+      </div>
+    </div>
+    <div class="opt-field">
+      <label>Mostra thumbnail nel popup</label>
+      <div class="checkbox-row">
+        <input type="checkbox" id="kmzThumb" checked>
+        <span>Immagine anteprima nel balloon</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top: 1.2rem; display: flex; gap: 10px; flex-wrap: wrap;">
+    <button class="btn primary" onclick="generateKMZ()" id="kmzBtn">🌍 Genera e scarica KMZ</button>
+    <button class="btn" onclick="toggleKmzOptions()">Annulla</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const photos = [];
+let sortCol = 'filename';
+let sortDir = 1;
+let searchTerm = '';
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+async function handleFiles(files) {
+  const SUPPORTED_EXTS = ['jpg','jpeg','tif','tiff','heic','heif','dng','cr2','cr3','nef','nrw','arw','sr2','rw2','orf','raf','pef','x3f','webp','png'];
+  const supported = files.filter(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    return SUPPORTED_EXTS.includes(ext) || f.type.startsWith('image/');
+  });
+  if (!supported.length) { showToast('Nessun formato supportato trovato', 'warn'); return; }
+
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  bar.style.display = 'block';
+
+  for (let i = 0; i < supported.length; i++) {
+    fill.style.width = ((i + 1) / supported.length * 100) + '%';
+    const existing = photos.find(p => p.filename === supported[i].name);
+    if (existing) continue;
+    try {
+      const data = await extractGeo(supported[i]);
+      data.file = supported[i];
+      data.thumb = await createThumb(supported[i]);
+      photos.push(data);
+    } catch(e) {
+      photos.push({ filename: supported[i].name, format: getFormat(supported[i].name), lat: null, lon: null, alt: null, date: null, file: supported[i], thumb: null, error: e.message });
+    }
+  }
+
+  setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0%'; }, 400);
+  updateStats();
+  renderTable();
+  document.getElementById('statsBar').style.display = 'grid';
+  document.getElementById('toolbar').style.display = 'flex';
+  document.getElementById('csvActions').style.display = 'flex';
+  document.getElementById('tableContainer').style.display = 'block';
+  fileInput.value = '';
+}
+
+function createThumb(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Format detection ────────────────────────────────────────────────────────
+function getFormat(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const map = {
+    jpg:'JPEG', jpeg:'JPEG', tif:'TIFF', tiff:'TIFF',
+    heic:'HEIC', heif:'HEIF', dng:'DNG', cr2:'CR2', cr3:'CR3',
+    nef:'NEF', nrw:'NRW', arw:'ARW', sr2:'SR2', rw2:'RW2',
+    orf:'ORF', raf:'RAF', pef:'PEF', x3f:'X3F',
+    webp:'WEBP', png:'PNG'
+  };
+  return map[ext] || ext.toUpperCase();
+}
+
+// ── Main dispatcher ──────────────────────────────────────────────────────────
+function extractGeo(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Lettura file fallita'));
+    reader.onload = e => {
+      try {
+        const buf = e.target.result;
+        const view = new DataView(buf);
+        const fmt = getFormat(file.name);
+        let result = null;
+
+        if (ext === 'jpg' || ext === 'jpeg') {
+          result = parseJpeg(buf, view);
+        } else if (ext === 'heic' || ext === 'heif') {
+          result = parseHeic(buf, view);
+        } else if (ext === 'png') {
+          result = parsePng(buf, view);
+        } else if (ext === 'webp') {
+          result = parseWebp(buf, view);
+        } else if (ext === 'raf') {
+          result = parseRaf(buf, view);
+        } else {
+          // TIFF-based: TIFF, GeoTIFF, DNG, CR2, CR3, NEF, NRW, ARW, SR2, RW2, ORF, PEF, X3F
+          result = parseTiffBased(buf, view);
+        }
+
+        resolve({ filename: file.name, format: fmt, ...(result || { lat:null, lon:null, alt:null, date:null }) });
+      } catch(err) { reject(err); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── JPEG parser ──────────────────────────────────────────────────────────────
+function parseJpeg(buf, view) {
+  if (view.getUint16(0) !== 0xFFD8) return null;
+  let offset = 2;
+  while (offset < buf.byteLength - 4) {
+    if (view.getUint8(offset) !== 0xFF) break;
+    const marker = view.getUint16(offset);
+    const len = view.getUint16(offset + 2);
+    if (marker === 0xFFE1) {
+      const hdr = String.fromCharCode(...new Uint8Array(buf, offset + 4, 6));
+      if (hdr.startsWith('Exif')) {
+        return parseTiffBlock(buf, offset + 10);
+      }
+      // XMP fallback
+      const xmpHdr = new Uint8Array(buf, offset + 4, 29);
+      const xmpStr = String.fromCharCode(...xmpHdr);
+      if (xmpStr.startsWith('http://ns.adobe.com/xap/1.0/')) {
+        const xmpText = new TextDecoder().decode(new Uint8Array(buf, offset + 4 + 29, len - 31));
+        return parseXmp(xmpText);
+      }
+    }
+    if (marker === 0xFFDA) break;
+    offset += 2 + len;
+  }
+  return { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── TIFF/GeoTIFF/RAW (all TIFF-based formats) ────────────────────────────────
+function parseTiffBased(buf, view) {
+  const magic = view.getUint16(0);
+  // CR3 uses ISO BMFF container like HEIC
+  if (magic === 0x0000 || (view.getUint32(4) === 0x66747970)) {
+    return parseBmffExif(buf, view);
+  }
+  if (magic !== 0x4949 && magic !== 0x4D4D) return { lat:null, lon:null, alt:null, date:null };
+  const result = parseTiffBlock(buf, 0);
+  if (result && result.lat !== null) return result;
+  // Try GeoTIFF ModelTiepointTag / ProjectedCSTypeGeoKey fallback (rare, usually already decimal)
+  return result || { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── Core TIFF IFD parser (shared by JPEG-EXIF, TIFF, DNG, NEF, ARW, ORF...) ──
+function parseTiffBlock(buf, baseOffset) {
+  const tiff = new DataView(buf, baseOffset);
+  const le = tiff.getUint16(0) === 0x4949;
+  const ifd0start = tiff.getUint32(4, le);
+  if (ifd0start >= buf.byteLength - baseOffset) return null;
+
+  const entries0 = tiff.getUint16(ifd0start, le);
+  let gpsOff = null, subExifOff = null, dateStr = null;
+
+  for (let i = 0; i < entries0; i++) {
+    const base = ifd0start + 2 + i * 12;
+    if (base + 12 > tiff.byteLength) break;
+    const tag = tiff.getUint16(base, le);
+    const cnt = tiff.getUint32(base + 4, le);
+    const valOff = base + 8;
+
+    if (tag === 0x8825) gpsOff = tiff.getUint32(valOff, le);
+    if (tag === 0x8769) subExifOff = tiff.getUint32(valOff, le);
+    if (tag === 0x0132 || tag === 0x9003) {
+      try {
+        const off2 = cnt <= 4 ? valOff : tiff.getUint32(valOff, le);
+        let s = '';
+        for (let c = 0; c < Math.min(cnt, 24); c++) s += String.fromCharCode(tiff.getUint8(off2 + c));
+        if (s.trim()) dateStr = s.trim().replace(/\0/g,'');
+      } catch(_){}
+    }
+  }
+
+  // Try SubExif IFD for DateTimeOriginal if not found yet
+  if (!dateStr && subExifOff) {
+    try {
+      const ec = tiff.getUint16(subExifOff, le);
+      for (let i = 0; i < ec; i++) {
+        const base = subExifOff + 2 + i * 12;
+        if (base + 12 > tiff.byteLength) break;
+        const tag = tiff.getUint16(base, le);
+        if (tag === 0x9003 || tag === 0x9004) {
+          const cnt = tiff.getUint32(base + 4, le);
+          const off2 = cnt <= 4 ? base + 8 : tiff.getUint32(base + 8, le);
+          let s = '';
+          for (let c = 0; c < Math.min(cnt, 24); c++) s += String.fromCharCode(tiff.getUint8(off2 + c));
+          if (s.trim()) { dateStr = s.trim().replace(/\0/g,''); break; }
+        }
+      }
+    } catch(_){}
+  }
+
+  let lat = null, lon = null, alt = null;
+  if (gpsOff !== null) {
+    try {
+      const gpsResult = parseGpsIfd(tiff, gpsOff, le);
+      lat = gpsResult.lat; lon = gpsResult.lon; alt = gpsResult.alt;
+    } catch(_){}
+  }
+
+  let dateFormatted = null;
+  if (dateStr) {
+    const parts = dateStr.split(' ');
+    const d = parts[0].replace(/:/g,'-');
+    dateFormatted = parts[1] ? d + ' ' + parts[1] : d;
+  }
+  return { lat, lon, alt, date: dateFormatted };
+}
+
+// ── GPS IFD reader ────────────────────────────────────────────────────────────
+function parseGpsIfd(tiff, gpsOff, le) {
+  const gpsEntries = tiff.getUint16(gpsOff, le);
+  let latRef='N', lonRef='E', latV=null, lonV=null, altRef=0, altV=null;
+
+  const typeSizes = [0,1,1,2,4,8,0,0,2,4,8,4,8];
+
+  for (let i = 0; i < gpsEntries; i++) {
+    const base = gpsOff + 2 + i * 12;
+    if (base + 12 > tiff.byteLength) break;
+    const tag  = tiff.getUint16(base, le);
+    const type = tiff.getUint16(base + 2, le);
+    const cnt  = tiff.getUint32(base + 4, le);
+    const sz   = (typeSizes[Math.min(type, 12)] || 1) * cnt;
+    const valOffset = sz <= 4 ? base + 8 : tiff.getUint32(base + 8, le);
+
+    if (valOffset < 0 || valOffset + sz > tiff.byteLength) continue;
+
+    if (tag === 1) latRef = String.fromCharCode(tiff.getUint8(valOffset));
+    if (tag === 3) lonRef = String.fromCharCode(tiff.getUint8(valOffset));
+    if (tag === 5) altRef = tiff.getUint8(valOffset);
+    if (tag === 2 || tag === 4) {
+      const ratToDD = (off) => {
+        const d = tiff.getUint32(off, le) / (tiff.getUint32(off+4, le) || 1);
+        const m = tiff.getUint32(off+8, le) / (tiff.getUint32(off+12, le) || 1);
+        const s = tiff.getUint32(off+16, le) / (tiff.getUint32(off+20, le) || 1);
+        return d + m/60 + s/3600;
+      };
+      if (tag === 2) latV = ratToDD(valOffset);
+      else lonV = ratToDD(valOffset);
+    }
+    if (tag === 6) {
+      const n = tiff.getUint32(valOffset, le);
+      const d = tiff.getUint32(valOffset+4, le);
+      altV = d !== 0 ? (altRef === 1 ? -(n/d) : n/d) : null;
+    }
+  }
+  return {
+    lat: latV !== null ? (latRef==='S' ? -latV : latV) : null,
+    lon: lonV !== null ? (lonRef==='W' ? -lonV : lonV) : null,
+    alt: altV
+  };
+}
+
+// ── HEIC / HEIF / CR3 (ISO BMFF container) ───────────────────────────────────
+function parseHeic(buf, view) {
+  return parseBmffExif(buf, view);
+}
+
+function parseBmffExif(buf, view) {
+  // Walk BMFF boxes looking for 'Exif' or 'mdat'
+  let offset = 0;
+  const MAX = buf.byteLength;
+
+  function readBox(start, end) {
+    let pos = start;
+    while (pos + 8 <= end) {
+      let size = view.getUint32(pos);
+      const type = String.fromCharCode(
+        view.getUint8(pos+4), view.getUint8(pos+5),
+        view.getUint8(pos+6), view.getUint8(pos+7)
+      );
+      let headerSize = 8;
+      if (size === 1) {
+        // 64-bit extended size
+        size = view.getUint32(pos + 8) * 0x100000000 + view.getUint32(pos + 12);
+        headerSize = 16;
+      }
+      if (size === 0) size = end - pos;
+      if (size < headerSize) break;
+
+      const boxEnd = Math.min(pos + size, end);
+      const contentStart = pos + headerSize;
+
+      if (type === 'Exif') {
+        // HEIC Exif box: 4-byte offset then EXIF data
+        const exifDataOff = view.getUint32(contentStart) + contentStart + 4;
+        if (exifDataOff + 6 < MAX) {
+          const hdr = String.fromCharCode(
+            view.getUint8(exifDataOff), view.getUint8(exifDataOff+1),
+            view.getUint8(exifDataOff+2), view.getUint8(exifDataOff+3),
+            view.getUint8(exifDataOff+4), view.getUint8(exifDataOff+5)
+          );
+          if (hdr.startsWith('Exif')) {
+            return parseTiffBlock(buf, exifDataOff + 6);
+          }
+          // Try direct TIFF
+          const m = view.getUint16(exifDataOff);
+          if (m === 0x4949 || m === 0x4D4D) return parseTiffBlock(buf, exifDataOff);
+        }
+      }
+
+      // Container boxes — recurse into them
+      const CONTAINERS = ['moov','trak','udta','meta','ilst','dinf','stbl','minf','mdia','iloc',
+                          'iref','iprp','ipco','ftyp','moof','traf','uuid'];
+      if (CONTAINERS.includes(type) || type.startsWith('co') || type === 'idat') {
+        // meta box has a 4-byte version+flags before children
+        const childStart = type === 'meta' ? contentStart + 4 : contentStart;
+        const r = readBox(childStart, boxEnd);
+        if (r) return r;
+      }
+      pos = boxEnd;
+    }
+    return null;
+  }
+
+  const r = readBox(0, MAX);
+  return r || { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── PNG ───────────────────────────────────────────────────────────────────────
+function parsePng(buf, view) {
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  if (view.getUint32(0) !== 0x89504E47) return { lat:null, lon:null, alt:null, date:null };
+  let offset = 8;
+  while (offset + 12 <= buf.byteLength) {
+    const len  = view.getUint32(offset);
+    const type = String.fromCharCode(
+      view.getUint8(offset+4), view.getUint8(offset+5),
+      view.getUint8(offset+6), view.getUint8(offset+7)
+    );
+    if (type === 'eXIf') {
+      // Raw EXIF in PNG eXIf chunk
+      return parseTiffBlock(buf, offset + 8);
+    }
+    if (type === 'tEXt' || type === 'iTXt' || type === 'zTXt') {
+      try {
+        const data = new Uint8Array(buf, offset + 8, len);
+        const text = new TextDecoder('latin1').decode(data);
+        if (text.includes('GPS') || text.includes('xap') || text.includes('x:xmpmeta')) {
+          const r = parseXmp(text);
+          if (r && r.lat !== null) return r;
+        }
+      } catch(_){}
+    }
+    if (type === 'IEND') break;
+    offset += 12 + len;
+  }
+  return { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── WEBP ──────────────────────────────────────────────────────────────────────
+function parseWebp(buf, view) {
+  // RIFF....WEBP
+  if (view.getUint32(0) !== 0x52494646) return { lat:null, lon:null, alt:null, date:null };
+  if (String.fromCharCode(...new Uint8Array(buf, 8, 4)) !== 'WEBP') return { lat:null, lon:null, alt:null, date:null };
+  let offset = 12;
+  while (offset + 8 <= buf.byteLength) {
+    const type = String.fromCharCode(
+      view.getUint8(offset), view.getUint8(offset+1),
+      view.getUint8(offset+2), view.getUint8(offset+3)
+    );
+    const size = view.getUint32(offset + 4, true);
+    if (type === 'EXIF') return parseTiffBlock(buf, offset + 8);
+    if (type === 'XMP ') {
+      const xmpText = new TextDecoder().decode(new Uint8Array(buf, offset + 8, size));
+      return parseXmp(xmpText);
+    }
+    offset += 8 + size + (size % 2); // chunks are word-aligned
+  }
+  return { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── Fujifilm RAF ──────────────────────────────────────────────────────────────
+function parseRaf(buf, view) {
+  // RAF: "FUJIFILMCCD-RAW " header, JPEG preview embedded, then RAW
+  const sig = new TextDecoder().decode(new Uint8Array(buf, 0, 16));
+  if (!sig.startsWith('FUJIFILM')) return { lat:null, lon:null, alt:null, date:null };
+  // JPEG offset at byte 84, length at byte 88
+  try {
+    const jpgOffset = view.getUint32(84);
+    const jpgLen    = view.getUint32(88);
+    if (jpgOffset > 0 && jpgLen > 0 && jpgOffset + jpgLen <= buf.byteLength) {
+      const subBuf = buf.slice(jpgOffset, jpgOffset + jpgLen);
+      const subView = new DataView(subBuf);
+      return parseJpeg(subBuf, subView);
+    }
+  } catch(_){}
+  return { lat:null, lon:null, alt:null, date:null };
+}
+
+// ── XMP GPS fallback ──────────────────────────────────────────────────────────
+function parseXmp(xmpStr) {
+  const get = (names) => {
+    for (const n of names) {
+      const m = xmpStr.match(new RegExp(`${n}[="'\\s>]+([\\d.+\\-]+)`, 'i'));
+      if (m) return parseFloat(m[1]);
+    }
+    return null;
+  };
+  const getStr = (names) => {
+    for (const n of names) {
+      const m = xmpStr.match(new RegExp(`${n}[="'\\s>]+([^"'<]+)`, 'i'));
+      if (m) return m[1].trim();
+    }
+    return null;
+  };
+  const lat = get(['exif:GPSLatitude','GPSLatitude']);
+  const lon = get(['exif:GPSLongitude','GPSLongitude']);
+  const alt = get(['exif:GPSAltitude','GPSAltitude']);
+  const date = getStr(['exif:DateTimeOriginal','xmp:CreateDate','DateTimeOriginal']);
+  return { lat, lon, alt: alt ?? null, date: date ?? null };
+}
+
+function updateStats() {
+  const gps = photos.filter(p => p.lat !== null && p.lon !== null);
+  const withAlt = photos.filter(p => p.alt !== null);
+  document.getElementById('statTotal').textContent = photos.length;
+  document.getElementById('statGps').textContent = gps.length;
+  document.getElementById('statNoGps').textContent = photos.length - gps.length;
+  document.getElementById('statAlt').textContent = withAlt.length;
+}
+
+function getFiltered() {
+  let list = [...photos];
+  if (searchTerm) list = list.filter(p => p.filename.toLowerCase().includes(searchTerm));
+  list.sort((a, b) => {
+    let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+    if (typeof av === 'number' && typeof bv === 'number') return sortDir * (av - bv);
+    return sortDir * String(av).localeCompare(String(bv));
+  });
+  return list;
+}
+
+function renderTable() {
+  const list = getFiltered();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!list.length && photos.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = list.map(p => {
+    const hasGps = p.lat !== null && p.lon !== null;
+    const hasAlt = p.alt !== null;
+    let statusBadge = hasGps
+      ? (hasAlt ? '<span class="badge ok">GPS + Alt</span>' : '<span class="badge partial">GPS</span>')
+      : '<span class="badge err">Nessun GPS</span>';
+
+    const lat = hasGps ? p.lat.toFixed(7) : '<span class="no-gps">—</span>';
+    const lon = hasGps ? p.lon.toFixed(7) : '<span class="no-gps">—</span>';
+    const alt = hasAlt ? p.alt.toFixed(1) + ' m' : '<span class="no-gps">—</span>';
+    const date = p.date || '<span class="no-gps">—</span>';
+    const thumb = p.thumb ? `<img class="thumb" src="${p.thumb}" loading="lazy">` : '<div class="thumb" style="background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;">📷</div>';
+
+    const formatBadge = `<span style="font-family:'Sora',sans-serif;font-size:0.65rem;padding:2px 7px;border-radius:20px;background:rgba(88,166,255,0.12);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)">${p.format || '?'}</span>`;
+
+    return `<tr>
+      <td>${thumb}</td>
+      <td class="filename" title="${p.filename}">${p.filename}</td>
+      <td style="text-align:center">${formatBadge}</td>
+      <td>${lat}</td>
+      <td>${lon}</td>
+      <td>${alt}</td>
+      <td>${date}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortByCol(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+document.getElementById('searchBox').addEventListener('input', e => {
+  searchTerm = e.target.value.toLowerCase();
+  renderTable();
+});
+
+function clearAll() {
+  if (!confirm('Rimuovere tutti i file caricati?')) return;
+  photos.length = 0;
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('toolbar').style.display = 'none';
+  document.getElementById('csvActions').style.display = 'none';
+  document.getElementById('tableContainer').style.display = 'none';
+  document.getElementById('kmzOptions').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('tableBody').innerHTML = '';
+}
+
+function exportCSV() {
+  const list = getFiltered();
+  const rows = [['Filename','Formato','Latitudine','Longitudine','Altitudine_m','Data']];
+  list.forEach(p => rows.push([p.filename, p.format ?? '', p.lat ?? '', p.lon ?? '', p.alt ?? '', p.date ?? '']));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'geofotos.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV esportato con successo', 'ok');
+}
+
+function copyTable() {
+  const list = getFiltered();
+  const rows = [['Filename','Formato','Latitudine','Longitudine','Altitudine (m)','Data']];
+  list.forEach(p => rows.push([p.filename, p.format ?? '—', p.lat?.toFixed(7) ?? '—', p.lon?.toFixed(7) ?? '—', p.alt?.toFixed(1) ?? '—', p.date ?? '—']));
+  const text = rows.map(r => r.join('\t')).join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('Tabella copiata negli appunti', 'ok'));
+}
+
+function toggleKmzOptions() {
+  const el = document.getElementById('kmzOptions');
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  if (el.style.display === 'block') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function generateKMZ() {
+  const btn = document.getElementById('kmzBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generazione in corso...';
+
+  try {
+    const onlyGps = document.getElementById('kmzOnlyGps').checked;
+    const useAlt = document.getElementById('kmzUseAlt').checked;
+    const useThumb = document.getElementById('kmzThumb').checked;
+    const name = document.getElementById('kmzName').value || 'GeoPhoto';
+    const desc = document.getElementById('kmzDesc').value || '';
+    const icon = document.getElementById('kmzIcon').value;
+
+    let list = [...photos];
+    if (onlyGps) list = list.filter(p => p.lat !== null && p.lon !== null);
+
+    if (!list.length) {
+      showToast('Nessun punto da esportare', 'warn');
+      btn.disabled = false; btn.textContent = '🌍 Genera e scarica KMZ';
+      return;
+    }
+
+    const zip = new JSZip();
+    const images = zip.folder('images');
+    const placemarks = [];
+
+    for (const p of list) {
+      let imgRef = '';
+      if (useThumb && p.thumb) {
+        const base64Data = p.thumb.split(',')[1];
+        const imgName = 'images/' + p.filename.replace(/\.[^.]+$/, '.jpg');
+        images.file(p.filename.replace(/\.[^.]+$/, '.jpg'), base64Data, { base64: true });
+        imgRef = `<img src="${imgName}" width="200" style="border-radius:4px;margin-top:8px;"><br>`;
+      }
+
+      const altTag = (useAlt && p.alt !== null)
+        ? `<altitude>${p.alt.toFixed(2)}</altitude><altitudeMode>absolute</altitudeMode>`
+        : '<altitudeMode>clampToGround</altitudeMode>';
+
+      placemarks.push(`
+    <Placemark>
+      <name>${escapeXml(p.filename)}</name>
+      <description><![CDATA[
+        ${imgRef}
+        <b>File:</b> ${p.filename}<br>
+        <b>Latitudine:</b> ${p.lat?.toFixed(7) ?? '—'}<br>
+        <b>Longitudine:</b> ${p.lon?.toFixed(7) ?? '—'}<br>
+        <b>Altitudine:</b> ${p.alt != null ? p.alt.toFixed(1) + ' m' : '—'}<br>
+        ${p.date ? `<b>Data:</b> ${p.date}<br>` : ''}
+      ]]></description>
+      <Style>
+        <IconStyle>
+          <Icon><href>${icon}</href></Icon>
+          <scale>1.1</scale>
+        </IconStyle>
+        <BalloonStyle>
+          <text><![CDATA[$[description]]]></text>
+        </BalloonStyle>
+      </Style>
+      <Point>
+        ${altTag}
+        <coordinates>${(p.lon ?? 0).toFixed(7)},${(p.lat ?? 0).toFixed(7)},${(p.alt ?? 0).toFixed(2)}</coordinates>
+      </Point>
+    </Placemark>`);
+    }
+
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escapeXml(name)}</name>
+    <description>${escapeXml(desc)}</description>
+    ${placemarks.join('\n')}
+  </Document>
+</kml>`;
+
+    zip.file('doc.kml', kml);
+
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name.replace(/\s+/g, '_') + '.kmz';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast(`KMZ generato con ${list.length} punti`, 'ok');
+  } catch(e) {
+    showToast('Errore: ' + e.message, 'err');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🌍 Genera e scarica KMZ';
+}
+
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const msgEl = document.getElementById('toastMsg');
+  icon.textContent = type === 'ok' ? '✅' : type === 'warn' ? '⚠️' : '❌';
+  msgEl.textContent = msg;
+  toast.style.display = 'flex';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+</script>
+</body>
+</html>
